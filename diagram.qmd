@@ -1,0 +1,70 @@
+---
+title: "Bank Merger Act process"
+subtitle: "Holding company acquisitions are treated differently"
+format:
+  html:
+    css: styles.css
+editor: visual
+---
+
+
+```{mermaid}
+
+sequenceDiagram
+  participant other_bank
+  participant applicant
+  participant FDIC
+  participant other_regulators
+  participant DOJ
+  participant consumers
+
+  rect rgb(150, 196, 237)
+  Note left of FDIC: application submission
+  other_bank-->applicant: Boards agree to pursue merger
+  applicant->>FDIC: aplication submitted
+
+  end
+  
+  par other notices 
+    rect rgb(195, 196, 196)
+    applicant->>consumers: notice of merger publication
+    applicant->>states: notice to state banking regulators (although this may be through the Federal Reserve?)
+    consumers->>FDIC: comment period
+    opt if branches closed 
+      applicant->>consumers: notice of branch closures 90 days before
+      applicant->>other_regulators: notice to primary federal regulator 90 days before
+    end
+    end
+
+  and review period
+    rect rgb(	226, 239, 216)
+    Note right of consumers: review and verification <br> (60 days) 
+    FDIC->>DOJ: forward application and request competitive factor report
+    DOJ->>FDIC: competitive factor report 
+    states->>FDIC: confirmation of notification
+     opt if merged greater than 30% of branches in state
+      FDIC->>states: exception process 
+      states->>FDIC: can allow excepted merger to continue
+    end
+    FDIC->>applicant: shares competitive factor report
+    applicant->>FDIC: comments on negative competitive factor reports 
+  loop summary of investigation
+   FDIC->>FDIC: Reviews statutory factors
+   FDIC->>FDIC: verification and reconciliation of branch closures 
+   FDIC->>FDIC: Consultation with supervisory regulators
+   end
+  end
+  end
+  
+  rect rgb(240, 195, 184)
+    Note right of DOJ: final approval <br> (15-30 day waiting period)
+      alt approval
+      FDIC->>applicant: Sends approval with timeframe
+      else denial 
+      FDIC->>applicant: Sends disapproval possibly with reasoning
+      applicant->>FDIC: Request for reconsideration within 15 days.
+      FDIC->>applicant: Deciscion on reconsideration within 15 days.
+      end
+  end
+    
+```
