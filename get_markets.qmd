@@ -14,12 +14,15 @@ base <- "https://cassidi.stlouisfed.org"
 
 # start a server and open a navigator (firefox by default)
 
-driver <- rsDriver(port = as.integer(4527), browser = 'chrome', chromever = '107.0.5304.18')
+driver <- rsDriver(port = as.integer(4525), browser = 'chrome', chromever = '107.0.5304.18')
 
 client <- driver$client
 # go to google
 client$navigate(base_url)
 
+```
+
+```{r}
 #button <- client$findElement(using = "xpath", "/html/body/div[5]/div/div/div[3]/button[1]")
 #button$sendKeysToElement(list("btn btn-primary", key = "enter"))
 
@@ -56,13 +59,59 @@ market_hhi_file_name <- paste0(here::here(), "/pages/", market_hhi_file_name)
 
 
 
-
 ```
 
 
 ```{r}
 # need to keep computer active during this.
-source("loop.R")
+
+market_sequence <- seq_along(markets)
+
+for(i in market_sequence){  
+    client$navigate(market_links[i])
+    1+1
+    Sys.sleep(5)
+    # get source code
+    page <- client$getPageSource()
+    readr::write_lines(page[[1]], market_file_name[i])
+
+    client$navigate(market_hhi[i])
+    # get source code
+    1+1
+    Sys.sleep(5)
+    page <- client$getPageSource()
+    readr::write_lines(page[[1]], market_hhi_file_name[i])
+    cat(i, "\n")
+    }
+
+
+# this is because some didn't work
+market_hhi <- market_hhi[order( market_hhi)]
+market_hhi_file_name <- market_hhi_file_name[order( market_hhi_file_name)]
+
+market_file_name <- market_file_name[order( market_file_name)] 
+market_links <- market_links[order( market_links)]
+market_links[1:10]
+market_file_name[1:10]
+redo <- which( is.na(market_name))
+
+for(i in redo){  
+    client$navigate(market_links[i])
+    1+1
+    Sys.sleep(5)
+    # get source code
+    page <- client$getPageSource()
+    readr::write_lines(page[[1]], market_file_name[i])
+
+    client$navigate(market_hhi[i])
+    # get source code
+    1+1
+    Sys.sleep(5)
+    page <- client$getPageSource()
+    readr::write_lines(page[[1]], market_hhi_file_name[i])
+    cat(i, "\n")
+    }
+
 
  ```   
 
@@ -81,9 +130,17 @@ market_name <- map(
     , css = "#content-container > div > div > div > div > div:nth-child(2)"
     )
 
-county_hhi_table <- map(markets, rvest::html_elements, "table")
+market_name <- map(market_name, html_text2)
+market_name <- market_name  %>% 
+    str_sub(1, end = (str_locate(market_name, "Banking Market")[,1]) - 2 )
 
-hhi_tables <- county_table  %>%
+names(market_name) <- files[files  %>% stringr::str_detect("hhi")]
+
+redo <- names(market_name)[is.na(market_name)]
+
+hhi_table <- map(markets, rvest::html_elements, "table")
+
+hhi_table <- hhi_table  %>%
     map(html_table)  %>% 
     map(as.data.frame)
 
@@ -91,14 +148,52 @@ clean_table <- function(df){
     
     df_names <- map2_chr(df[2, ], df[3, ], paste)  %>% str_trim()
     names(df) <- df_names
-    final <- as_tibble(df[4:nrow(temp), ])
+    final <- as_tibble(df[4:nrow(df), ])
     final[final==""] <- NA
 
     final 
     
     }    
 
-hhi_tables <- map(hhi_tables, clean_table)
+hhi_table <- map(hhi_table, clean_table)
+
+add_column <- function(x, df, name ){
+    df[[name]] <- x
+    df
+}
+
+hhi_table <- map2(market_name, hhi_table, add_column,  name = "market_name")
+
+county_files <- files[!  files  %>% stringr::str_detect("hhi")]
+county_pages <- paste0(here::here(),"/pages/", county_files)
+county_pages <- map(county_pages, read_html)
+
+county_table <- map(
+    county_pages
+    , html_elements
+    , css = "#content-container > div > div > div > div > div:nth-child(4) > div > div.ng-scope.ng-isolate-scope > div > div:nth-child(2) > div:nth-child(1) > table"
+    )
+
+
+first_row_to_names <- function(df){
+    names <- as.character(df[1, ])
+    names(df) <- names
+    df[-1, ]
+}
+
+clean_county_table <- function(df){
+    names <- temp[2 , ]
+    
+    rows <- seq(2, nrow(temp) - 1)
+    temp <- temp[rows, 1:2]
+    
+    first_row_to_names(temp)
+}
+
+count_dfs <- county_table  %>%
+    map(html_table, trim = TRUE, header = FALSE)  
+
+temp <- count_dfs[[2]][[1]]
 
 
 
