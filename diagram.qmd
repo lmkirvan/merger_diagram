@@ -57,13 +57,13 @@ sequenceDiagram
   end
   
   rect rgb(240, 195, 184)
-    Note right of DOJ: final approval <br> (15-30 day waiting period)
+    Note left of FDIC: final approval <br> (15-75 day waiting period)
       alt approval
       FDIC->>applicant: Sends approval with timeframe
       else denial 
       FDIC->>applicant: Sends disapproval possibly with reasoning
       applicant->>FDIC: Request for reconsideration within 15 days.
-      FDIC->>applicant: Deciscion on reconsideration within 15 days.
+      FDIC->>applicant: Deciscion on reconsideration within 60 days.
       end
   end
     

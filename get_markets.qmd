@@ -1,0 +1,105 @@
+---
+title: "scrape banking markets"
+format: html
+---
+
+```{r}
+
+library(tidyverse)
+library(rvest)
+library(RSelenium)
+
+base_url <- "https://cassidi.stlouisfed.org/markets/list"
+base <- "https://cassidi.stlouisfed.org"
+
+# start a server and open a navigator (firefox by default)
+
+driver <- rsDriver(port = as.integer(4527), browser = 'chrome', chromever = '107.0.5304.18')
+
+client <- driver$client
+# go to google
+client$navigate(base_url)
+
+#button <- client$findElement(using = "xpath", "/html/body/div[5]/div/div/div[3]/button[1]")
+#button$sendKeysToElement(list("btn btn-primary", key = "enter"))
+
+# get source code
+page <- client$getPageSource()
+
+# convert to xml for easier parsing
+page_xml <- read_html(page[[1]])
+
+#links_table <- page_xml  %>% 
+#    rvest::html_table()
+
+hrefs <- page_xml  %>%
+    rvest::html_elements( "a")  %>% 
+    rvest::html_attr("href")
+
+markets <- hrefs[ stringr::str_detect(hrefs, "/markets/[0-9]+") ]
+
+market_links <- paste0(base, markets)
+market_file_name <- markets  %>% 
+    stringr::str_replace_all("/", "-" )  %>%  
+    stringr::str_sub(start = 2)  %>% 
+    paste0(".txt")  
+
+market_file_name <- paste0(here::here(), "/pages/", market_file_name)
+
+market_hhi <- paste0(market_links, "/hhi")
+market_hhi_file_name <- markets  %>% 
+    stringr::str_replace_all("/", "-" )  %>%  
+    stringr::str_sub(start = 2)  %>% 
+    paste0("-hhi.txt")  
+
+market_hhi_file_name <- paste0(here::here(), "/pages/", market_hhi_file_name)
+
+
+
+
+```
+
+
+```{r}
+# need to keep computer active during this.
+source("loop.R")
+
+ ```   
+
+
+```{r}
+
+files <- list.files("pages")
+
+### HHI 
+markets <- files[files  %>% stringr::str_detect("hhi")]
+markets <- paste0(here::here(),"/pages/", markets)
+markets <- map(markets, read_html)
+market_name <- map(
+    markets
+    , html_element
+    , css = "#content-container > div > div > div > div > div:nth-child(2)"
+    )
+
+county_hhi_table <- map(markets, rvest::html_elements, "table")
+
+hhi_tables <- county_table  %>%
+    map(html_table)  %>% 
+    map(as.data.frame)
+
+clean_table <- function(df){ 
+    
+    df_names <- map2_chr(df[2, ], df[3, ], paste)  %>% str_trim()
+    names(df) <- df_names
+    final <- as_tibble(df[4:nrow(temp), ])
+    final[final==""] <- NA
+
+    final 
+    
+    }    
+
+hhi_tables <- map(hhi_tables, clean_table)
+
+
+
+```
